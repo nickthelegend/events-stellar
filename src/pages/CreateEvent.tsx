@@ -49,8 +49,13 @@ const CreateEvent: React.FC = () => {
       const result = await deployPOAContract(
         wasmBytes,
         eventParams,
-        address,
-        signTransaction
+        { 
+          publicKey: address, 
+          signTransaction: async (xdr: string) => {
+            const result = await signTransaction(xdr);
+            return result.signedTxXdr;
+          }
+        }
       );
 
       console.log("🎉 Deployment successful!");
@@ -88,7 +93,7 @@ const CreateEvent: React.FC = () => {
         <Layout.Inset>
           <Text as="h1" size="xl">Event Created Successfully! 🎉</Text>
           
-          <Card style={{ marginTop: "1rem", padding: "1rem" }}>
+          <Card>
             <Text as="h2" size="lg">Contract Details</Text>
             <div style={{ marginTop: "0.5rem" }}>
               <Text as="p" size="sm" style={{ fontFamily: "monospace", wordBreak: "break-all" }}>
@@ -103,6 +108,7 @@ const CreateEvent: React.FC = () => {
           <div style={{ marginTop: "1rem" }}>
             <Button
               variant="primary"
+              size="md"
               onClick={() => {
                 setDeploymentResult(null);
                 setEventParams({

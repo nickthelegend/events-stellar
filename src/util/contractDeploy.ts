@@ -36,60 +36,72 @@ export async function deployPOAContract(
   eventParams: EventParams,
   wallet: Wallet
 ): Promise<DeploymentResult> {
-  const server = new rpc.Server(SOROBAN_RPC);
-
-  // STEP 1: Upload Wasm
-  console.log("Uploading contract WASM...");
-  const source = await server.getAccount(wallet.publicKey);
-
-  let uploadTx = new TransactionBuilder(source, {
-    fee: BASE_FEE,
-    networkPassphrase: NETWORK_PASSPHRASE,
-  })
-    .addOperation(Operation.uploadContractWasm({ wasm: wasmBytes }))
-    .setTimeout(60)
-    .build();
+  try {
+    console.log("🔧 Starting deployment with params:", { wasmSize: wasmBytes.length, eventParams, walletKey: wallet.publicKey });
     
+    if (!wallet.publicKey) {
+      throw new Error("Wallet publicKey is undefined. Make sure wallet is connected.");
+    }
+    
+    const server = new rpc.Server(SOROBAN_RPC);
 
-  uploadTx = await server.prepareTransaction(uploadTx);
-  const signedUpload = await wallet.signTransaction(uploadTx.toXDR());
+    // STEP 1: Upload Wasm
+    console.log("📤 STEP 1: Uploading contract WASM...");
+    const source = await server.getAccount(wallet.publicKey);
+    console.log("✅ Got account source");
 
-  const txObj1 = TransactionBuilder.fromXDR(signedUpload, NETWORK_PASSPHRASE);
-  let hashTemp, statusTemp;
-  const uploadResponse = await server.sendTransaction(txObj1).then(result => {
-    console.log("hash:", result.hash);
-    hashTemp = result.hash;
-    console.log("status:", result.status);
-    statusTemp = result.status
-    console.log("errorResultXdr:", result.errorResult);
-  });;
+    console.log("🏗️ Building upload transaction...");
+    let uploadTx = new TransactionBuilder(source, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(Operation.uploadContractWasm({ wasm: wasmBytes }))
+      .setTimeout(60)
+      .build();
+    console.log("✅ Upload transaction built");
 
-  if (statusTemp === "ERROR") {
-    console.error("Upload failed:", uploadResponse);
-    throw new Error("WASM upload failed");
-  }
-  
-  const wasmHash : string | undefined = hashTemp ;
+    console.log("⚙️ Preparing transaction...");
+    uploadTx = await server.prepareTransaction(uploadTx);
+    console.log("✅ Transaction prepared");
 
-  if (!wasmHash) throw new Error("Could not extract wasmHash");
-  console.log("WASM Hash:", wasmHash);
+    console.log("✍️ Signing transaction...");
+    const signedUpload = await wallet.signTransaction(uploadTx.toXDR());
+    console.log("✅ Transaction signed");
 
-  // STEP 2: Create contract
-  console.log("Creating contract...");
-  const source2 = await server.getAccount(wallet.publicKey);
+    console.log("📡 Sending upload transaction...");
+    const txObj1 = TransactionBuilder.fromXDR(signedUpload, NETWORK_PASSPHRASE);
+    const uploadResponse = await server.sendTransaction(txObj1);
+    console.log("✅ Upload response:", uploadResponse);
 
-  let createTx = new TransactionBuilder(source2, {
-    fee: BASE_FEE,
-    networkPassphrase: NETWORK_PASSPHRASE,
-  })
-    .addOperation(
-      Operation.createCustomContract({
-        wasmHash: wasmHash,
-        address: Address.fromString(wallet.publicKey),
-      })
-    )
-    .setTimeout(60)
-    .build();
+    if (uploadResponse.status === "ERROR") {
+      console.error("❌ Upload failed:", uploadResponse);
+      throw new Error("WASM upload failed");
+    }
+
+    console.log("🔐 Generating WASM hash...");
+    const wasmHashBuffer = await crypto.subtle.digest('SHA-256', wasmBytes);
+    const wasmHash = new Uint8Array(wasmHashBuffer);
+    console.log("✅ WASM Hash generated:", wasmHash);
+
+    // STEP 2: Create contract
+    console.log("🏭 STEP 2: Creating contract...");
+    const source2 = await server.getAccount(wallet.publicKey);
+    console.log("✅ Got account source for contract creation");
+
+    console.log("🏗️ Building create contract transaction...");
+    let createTx = new TransactionBuilder(source2, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        Operation.createCustomContract({
+          wasmHash: wasmHash,
+          address: Address.fromString(wallet.publicKey),
+        })
+      )
+      .setTimeout(60)
+      .build();
+    console.log("✅ Create contract transaction built");
 
   // 1) SIMULATE to read the return value (contract address) before submitting
   const sim = await server.simulateTransaction(createTx);
@@ -134,7 +146,13 @@ function extractSimRetval(sim: any) {
     eventParams.name
   ]);
 
-  return { contractId, wasmHash: wasmHash };
+    console.log("🎉 Deployment completed successfully!");
+    return { contractId, wasmHash: Buffer.from(wasmHash).toString('hex') };
+  } catch (error) {
+    console.error("💥 Deployment failed at:", error);
+    console.error("📍 Error stack:", error.stack);
+    throw error;
+  }
 }
 
 async function callContract(wallet: Wallet, contractId: string, method: string, args: any[]) {
