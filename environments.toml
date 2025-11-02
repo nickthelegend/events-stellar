@@ -19,8 +19,8 @@ client = true
 
 # If your contract has a `__constructor`, specify your arguments to it here.
 # Only available in `development` and `testing` environments
-#constructor_args = """
---owner GDY5WPUFRR5ZCJVA3T56S2YSHZPU7EXP4ACT7AJVCH625HB24EJMJIRU --symbol "POA" --uri "www.mytoken.com" --name "Event 1"
+constructor_args = """
+--owner nick --symbol "POA" --uri "www.mytoken.com" --name "Event 1"
 """
 
 # Coming Soon: Specify live contracts to bind & import in this project using the given name.

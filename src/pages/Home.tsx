@@ -1,6 +1,5 @@
 import React from "react";
 import { Code, Layout, Text } from "@stellar/design-system";
-import { GuessTheNumber } from "../components/GuessTheNumber";
 
 const Home: React.FC = () => (
   <Layout.Content>
@@ -41,7 +40,7 @@ const Home: React.FC = () => (
         packages like this:
       </Text>
       <pre>
-        <Code size="md">import game from "./contracts/guess_the_number";</Code>
+        <Code size="md">import contract from "./contracts/hello_world";</Code>
       </pre>
       <Text as="p" size="md">
         If your contract emits events, check out the{" "}
@@ -49,14 +48,9 @@ const Home: React.FC = () => (
         <Code size="md">hooks/</Code> folder to listen to them.
       </Text>
       <Text as="p" size="md">
-        As an example, here's the <Code size="md">GuessTheNumber</Code>{" "}
-        component. Make changes to the contract and the component and see how
-        things change!
+        Your hello-world contract is ready to use. Check the debugger to
+        interact with it!
       </Text>
-      <Text as="h2" size="lg">
-        &lt;GuessTheNumber /&gt;
-      </Text>
-      <GuessTheNumber />
       <Text as="h2" size="lg">
         Interact with wallets
       </Text>
