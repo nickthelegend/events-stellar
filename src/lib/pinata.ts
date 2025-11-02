@@ -1,6 +1,4 @@
-const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY
-const PINATA_SECRET_KEY = import.meta.env.VITE_PINATA_SECRET_KEY
-const PINATA_JWT = import.meta.env.VITE_PINATA_JWT
+const PINATA_JWT = import.meta.env.VITE_PINATA_JWT || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI2NmUzZTMwZi1kMTUxLTQ5YmItOTMxOC1hZDlkMDRhOWQ2OGQiLCJlbWFpbCI6InRlc3Rpbmd0ZXNsYTdAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjJlNzgzNTBlMWZlZjJmZjdjNjk0Iiwic2NvcGVkS2V5U2VjcmV0IjoiY2I0ZWUwMmU2NjY5NmUxZDY4YWU3MzJiYzk3YjY2NjhlODU5OTQzZDY5ZGM2ZWQ2ZjJjNGRlY2ZkZjkxY2ZlYyIsImV4cCI6MTc5MzY0OTUyOH0.dCCtxSDaPnmXVJo5gacBtccM6cDmWzJRaOyIy51sqEA'
 
 export interface EventMetadata {
   name: string
@@ -9,8 +7,6 @@ export interface EventMetadata {
   date: string
   time: string
   image: string
-  maxTickets: number
-  ticketPrice: number
   category: string
   creator: string
 }

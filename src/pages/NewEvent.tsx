@@ -19,8 +19,6 @@ const NewEvent: React.FC = () => {
     location: "",
     eventDate: "",
     eventTime: "12:00",
-    maxTickets: "",
-    ticketPrice: "",
     category: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -66,8 +64,6 @@ const NewEvent: React.FC = () => {
         date: formData.eventDate,
         time: formData.eventTime,
         image: imageUrl,
-        maxTickets: parseInt(formData.maxTickets) || 0,
-        ticketPrice: parseFloat(formData.ticketPrice) || 0,
         category: formData.category,
         creator: address
       };
@@ -116,8 +112,6 @@ const NewEvent: React.FC = () => {
           creator_address: address,
           location: formData.location,
           event_date: new Date(`${formData.eventDate}T${formData.eventTime}`).toISOString(),
-          max_tickets: parseInt(formData.maxTickets) || null,
-          ticket_price: parseFloat(formData.ticketPrice) || 0,
           category: formData.category,
           image_url: imageUrl,
           metadata_ipfs_hash: metadataHash
@@ -221,28 +215,6 @@ const NewEvent: React.FC = () => {
                   type="time"
                   value={formData.eventTime}
                   onChange={(e) => setFormData(prev => ({ ...prev, eventTime: e.target.value }))}
-                  fieldSize="lg"
-                  style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <Input
-                  label="Max Tickets"
-                  id="maxTickets"
-                  type="number"
-                  value={formData.maxTickets}
-                  onChange={(e) => setFormData(prev => ({ ...prev, maxTickets: e.target.value }))}
-                  fieldSize="lg"
-                  style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
-                />
-                <Input
-                  label="Ticket Price (ALGO)"
-                  id="ticketPrice"
-                  type="number"
-                  step="0.01"
-                  value={formData.ticketPrice}
-                  onChange={(e) => setFormData(prev => ({ ...prev, ticketPrice: e.target.value }))}
                   fieldSize="lg"
                   style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
                 />
