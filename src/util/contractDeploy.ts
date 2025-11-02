@@ -1,16 +1,23 @@
-import { 
-  SorobanRpc, 
-  TransactionBuilder, 
+import {
+  rpc,
+  TransactionBuilder,
   Operation,
   BASE_FEE,
+  Networks,
   Address,
-  Contract,
+  scValToNative,
+  nativeToScVal,
   xdr,
-  nativeToScVal
 } from "@stellar/stellar-sdk";
+import fs from "fs";
 
-const SOROBAN_RPC = import.meta.env.PUBLIC_STELLAR_RPC_URL || "http://localhost:8000/rpc";
-const NETWORK_PASSPHRASE = import.meta.env.PUBLIC_STELLAR_NETWORK_PASSPHRASE || "Standalone Network ; February 2017";
+const SOROBAN_RPC = "https://soroban-testnet.stellar.org";
+const NETWORK_PASSPHRASE = Networks.TESTNET;
+
+interface Wallet {
+  publicKey: string;
+  signTransaction: (xdr: string) => Promise<string>;
+}
 
 export interface DeploymentResult {
   contractId: string;
@@ -23,155 +30,125 @@ export interface EventParams {
   name: string;
 }
 
-export async function deployPOAContract(
-  wasmBytes: Uint8Array,
-  eventParams: EventParams,
-  publicKey: string,
-  signTransaction: (txXdr: string) => Promise<string>
-): Promise<DeploymentResult> {
-  console.log("🚀 Starting POA contract deployment...");
-  console.log("📋 Event params:", eventParams);
-  
-  const server = new SorobanRpc.Server(SOROBAN_RPC);
-  
-  try {
-    // 1. Install WASM
-    console.log("📦 Installing WASM...");
-    const wasmHash = await installWasm(server, wasmBytes, publicKey, signTransaction);
-    console.log("✅ WASM installed with hash:", wasmHash);
-    
-    // 2. Create contract instance
-    console.log("🏗️ Creating contract instance...");
-    const contractId = await createContractInstance(server, wasmHash, publicKey, signTransaction);
-    console.log("✅ Contract created with ID:", contractId);
-    
-    // 3. Initialize contract
-    console.log("⚙️ Initializing contract...");
-    await initializeContract(server, contractId, eventParams, publicKey, signTransaction);
-    console.log("✅ Contract initialized successfully!");
-    
-    return { contractId, wasmHash };
-  } catch (error) {
-    console.error("❌ Deployment failed:", error);
-    throw error;
-  }
-}
+export async function deployContract(wallet: Wallet, wasmPath: string) {
+  const server = new rpc.Server(SOROBAN_RPC);
+  const wasmBytes = fs.readFileSync(wasmPath);
 
-async function installWasm(
-  server: SorobanRpc.Server,
-  wasmBytes: Uint8Array,
-  publicKey: string,
-  signTransaction: (txXdr: string) => Promise<string>
-): Promise<string> {
-  const sourceAccount = await server.getAccount(publicKey);
-  
-  const transaction = new TransactionBuilder(sourceAccount, {
+  // STEP 1: Upload Wasm
+  console.log("Uploading contract WASM...");
+  const source = await server.getAccount(wallet.publicKey);
+
+  let uploadTx = new TransactionBuilder(source, {
     fee: BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(Operation.uploadContractWasm({ wasm: wasmBytes }))
-    .setTimeout(30)
+    .setTimeout(60)
     .build();
-  
-  const preparedTx = await server.prepareTransaction(transaction);
-  const signedXdr = await signTransaction(preparedTx.toXDR());
-  
-  const response = await server.sendTransaction(signedXdr);
-  
-  if (response.status === "ERROR") {
-    throw new Error(`WASM installation failed: ${response.errorResultXdr}`);
-  }
-  
-  // Extract WASM hash from response
-  const wasmHash = extractWasmHash(response);
-  return wasmHash;
-}
 
-async function createContractInstance(
-  server: SorobanRpc.Server,
-  wasmHash: string,
-  publicKey: string,
-  signTransaction: (txXdr: string) => Promise<string>
-): Promise<string> {
-  const sourceAccount = await server.getAccount(publicKey);
-  
-  const transaction = new TransactionBuilder(sourceAccount, {
+  uploadTx = await server.prepareTransaction(uploadTx);
+  const signedUpload = await wallet.signTransaction(uploadTx.toXDR());
+  const uploadResponse = await server.sendTransaction(signedUpload);
+
+  if (uploadResponse.status !== "SUCCESS") {
+    console.error("Upload failed:", uploadResponse);
+    throw new Error("WASM upload failed");
+  }
+
+  const wasmHash = uploadResponse.resultMetaXdr
+    ? extractWasmHash(uploadResponse.resultMetaXdr)
+    : null;
+
+  if (!wasmHash) throw new Error("Could not extract wasmHash");
+  console.log("WASM Hash:", wasmHash.toString("hex"));
+
+  // STEP 2: Create contract
+  console.log("Creating contract...");
+  const source2 = await server.getAccount(wallet.publicKey);
+
+  let createTx = new TransactionBuilder(source2, {
     fee: BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
-      Operation.createStellarAsset({
-        asset: wasmHash,
-        source: publicKey,
+      Operation.createContract({
+        wasmHash: wasmHash,
+        address: new Address(wallet.publicKey).toScAddress(),
+        salt: crypto.getRandomValues(new Uint8Array(32)),
       })
     )
-    .setTimeout(30)
+    .setTimeout(60)
     .build();
-  
-  const preparedTx = await server.prepareTransaction(transaction);
-  const signedXdr = await signTransaction(preparedTx.toXDR());
-  
-  const response = await server.sendTransaction(signedXdr);
-  
-  if (response.status === "ERROR") {
-    throw new Error(`Contract creation failed: ${response.errorResultXdr}`);
+
+  createTx = await server.prepareTransaction(createTx);
+  const signedCreate = await wallet.signTransaction(createTx.toXDR());
+  const createResponse = await server.sendTransaction(signedCreate);
+
+  if (createResponse.status !== "SUCCESS") {
+    console.error("Contract creation failed:", createResponse);
+    throw new Error("Contract creation failed");
   }
-  
-  // Extract contract ID from response
-  const contractId = extractContractId(response);
+
+  const contractId = extractContractId(createResponse.resultMetaXdr);
+  console.log("✅ Contract deployed! ID:", contractId);
+
+  // STEP 3 (optional): Call an init function or constructor
+  // e.g. invoke a method named “init”
+  await callContract(wallet, contractId, "init", []);
+
   return contractId;
 }
 
-async function initializeContract(
-  server: SorobanRpc.Server,
-  contractId: string,
-  eventParams: EventParams,
-  publicKey: string,
-  signTransaction: (txXdr: string) => Promise<string>
-): Promise<void> {
-  const sourceAccount = await server.getAccount(publicKey);
-  const contract = new Contract(contractId);
-  
-  const transaction = new TransactionBuilder(sourceAccount, {
+async function callContract(wallet: Wallet, contractId: string, method: string, args: any[]) {
+  const server = new rpc.Server(SOROBAN_RPC);
+  const source = await server.getAccount(wallet.publicKey);
+
+  console.log(`Calling method ${method} on contract ${contractId}`);
+
+  let callTx = new TransactionBuilder(source, {
     fee: BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
-      contract.call(
-        "__constructor",
-        nativeToScVal(Address.fromString(publicKey)),
-        nativeToScVal(eventParams.symbol),
-        nativeToScVal(eventParams.uri),
-        nativeToScVal(eventParams.name)
-      )
+      Operation.invokeHostFunction({
+        func: xdr.HostFunction.hostFunctionTypeInvokeContract(),
+        parameters: [],
+        contractId: contractId,
+        functionName: method,
+        args: args.map(a => nativeToScVal(a)),
+      })
     )
-    .setTimeout(30)
+    .setTimeout(60)
     .build();
-  
-  const preparedTx = await server.prepareTransaction(transaction);
-  const signedXdr = await signTransaction(preparedTx.toXDR());
-  
-  const response = await server.sendTransaction(signedXdr);
-  
-  if (response.status === "ERROR") {
-    throw new Error(`Contract initialization failed: ${response.errorResultXdr}`);
+
+  callTx = await server.prepareTransaction(callTx);
+  const signed = await wallet.signTransaction(callTx.toXDR());
+  const response = await server.sendTransaction(signed);
+
+  console.log("Invoke Response:", response);
+  return response;
+}
+
+// Helpers
+function extractWasmHash(metaXdr: string): Buffer | null {
+  try {
+    const meta = xdr.TransactionMeta.fromXDR(metaXdr, "base64");
+    const wasmHash = meta.v3().sorobanMeta().returnValue().bytes();
+    return Buffer.from(wasmHash);
+  } catch (e) {
+    console.error("extractWasmHash failed:", e);
+    return null;
   }
 }
 
-function extractWasmHash(response: SorobanRpc.Api.SendTransactionResponse): string {
-  console.log("📊 Extracting WASM hash from response:", response);
-  
-  // For now, generate a mock hash - in production, extract from response
-  const mockHash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-  console.log("🔗 Generated WASM hash:", mockHash);
-  return mockHash;
-}
-
-function extractContractId(response: SorobanRpc.Api.SendTransactionResponse): string {
-  console.log("📊 Extracting contract ID from response:", response);
-  
-  // For now, generate a mock contract ID - in production, extract from response
-  const mockContractId = "CDUU47Y6DIBREP3CMFO3IQRA4NZX3HRGMUUHNBKTK4HKOXFZCBLZSYBT";
-  console.log("🆔 Generated contract ID:", mockContractId);
-  return mockContractId;
+function extractContractId(metaXdr: string): string {
+  try {
+    const meta = xdr.TransactionMeta.fromXDR(metaXdr, "base64");
+    const returnVal = meta.v3().sorobanMeta().returnValue().bytes();
+    const hex = Buffer.from(returnVal).toString("hex");
+    return `C${hex}`;
+  } catch (e) {
+    console.error("extractContractId failed:", e);
+    return "UNKNOWN";
+  }
 }
