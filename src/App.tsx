@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import NewEvent from "./pages/NewEvent";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import AdminEvents from "./pages/AdminEvents";
 import Debugger from "./pages/Debugger.tsx";
 
 const AppLayout: React.FC = () => (
@@ -16,22 +17,6 @@ const AppLayout: React.FC = () => (
       contentRight={
         <>
           <nav>
-            <NavLink
-              to="/new"
-              style={{
-                textDecoration: "none",
-              }}
-            >
-              {({ isActive }) => (
-                <Button
-                  variant="primary"
-                  size="md"
-                  disabled={isActive}
-                >
-                  Create Event
-                </Button>
-              )}
-            </NavLink>
             <NavLink
               to="/debug"
               style={{
@@ -79,6 +64,7 @@ function App() {
         <Route path="/new" element={<NewEvent />} />
         <Route path="/events" element={<Events />} />
         <Route path="/event/:contractId" element={<EventDetail />} />
+        <Route path="/admin/events" element={<AdminEvents />} />
         <Route path="/debug" element={<Debugger />} />
         <Route path="/debug/:contractName" element={<Debugger />} />
       </Route>
