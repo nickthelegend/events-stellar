@@ -271,14 +271,17 @@ npm run dev
 
 ### 2. Contract Development Cycle
 ```bash
-# Watch for contract changes and rebuild clients
-stellar scaffold watch --build-clients
+# Build POA contract
+cargo build --target wasm32v1-none --release
 
-# Manual contract build
-cargo build --target wasm32-unknown-unknown --release
+# Copy WASM to public directory
+copy target\wasm32v1-none\release\hello_world.wasm public\target\wasm32v1-none\release\
 
-# Deploy specific contract
-stellar contract deploy --wasm target/wasm32-unknown-unknown/release/guess_the_number.wasm
+# Start development with auto-rebuild
+npm run dev
+
+# Deploy new contract via frontend
+# Navigate to /new and use the deployment interface
 ```
 
 ### 3. Frontend Development
