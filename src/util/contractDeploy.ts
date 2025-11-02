@@ -78,6 +78,30 @@ export async function deployPOAContract(
       throw new Error("WASM upload failed");
     }
 
+    // Wait for upload transaction to be confirmed
+    console.log("⏳ Waiting for upload confirmation...");
+    let confirmed = false;
+    let attempts = 0;
+    while (!confirmed && attempts < 30) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        const txResult = await server.getTransaction(uploadResponse.hash);
+        if (txResult.status === "SUCCESS") {
+          console.log("✅ Upload transaction confirmed");
+          confirmed = true;
+        } else if (txResult.status === "FAILED") {
+          throw new Error("Upload transaction failed");
+        }
+      } catch (e) {
+        // Transaction not found yet, continue polling
+      }
+      attempts++;
+    }
+    
+    if (!confirmed) {
+      throw new Error("Upload transaction confirmation timeout");
+    }
+
     console.log("🔐 Generating WASM hash...");
     const wasmHashBuffer = await crypto.subtle.digest('SHA-256', wasmBytes);
     const wasmHash = new Uint8Array(wasmHashBuffer);
@@ -97,6 +121,12 @@ export async function deployPOAContract(
         Operation.createCustomContract({
           wasmHash: wasmHash,
           address: Address.fromString(wallet.publicKey),
+          constructorArgs: [
+            nativeToScVal(Address.fromString(wallet.publicKey)),
+            nativeToScVal(eventParams.name),
+            nativeToScVal(eventParams.symbol),
+            nativeToScVal(eventParams.uri)
+          ]
         })
       )
       .setTimeout(60)
@@ -138,19 +168,13 @@ function extractSimRetval(sim: any) {
   return sim.result?.retval;
 }
 
-  // STEP 3: Call constructor
-  await callContract(wallet, contractId, "__constructor", [
-    Address.fromString(wallet.publicKey),
-    eventParams.symbol,
-    eventParams.uri,
-    eventParams.name
-  ]);
+  // Constructor is called automatically during contract creation
 
     console.log("🎉 Deployment completed successfully!");
     return { contractId, wasmHash: Buffer.from(wasmHash).toString('hex') };
   } catch (error) {
     console.error("💥 Deployment failed at:", error);
-    console.error("📍 Error stack:", error.stack);
+    console.error("📍 Error stack:", error);
     throw error;
   }
 }
