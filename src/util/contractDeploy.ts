@@ -9,6 +9,7 @@ import {
   nativeToScVal,
   xdr,
   Contract,
+  StrKey,
 } from "@stellar/stellar-sdk";
 
 const SOROBAN_RPC = "https://soroban-testnet.stellar.org";
@@ -48,12 +49,12 @@ export async function deployPOAContract(
     .addOperation(Operation.uploadContractWasm({ wasm: wasmBytes }))
     .setTimeout(60)
     .build();
-    const signedUpload = await wallet.signTransaction(uploadTx.toXDR());
-
-    const txObj1 = TransactionBuilder.fromXDR(signedUpload, NETWORK_PASSPHRASE);
+    
 
   uploadTx = await server.prepareTransaction(uploadTx);
+  const signedUpload = await wallet.signTransaction(uploadTx.toXDR());
 
+  const txObj1 = TransactionBuilder.fromXDR(signedUpload, NETWORK_PASSPHRASE);
   let hashTemp, statusTemp;
   const uploadResponse = await server.sendTransaction(txObj1).then(result => {
     console.log("hash:", result.hash);
@@ -84,12 +85,30 @@ export async function deployPOAContract(
     .addOperation(
       Operation.createCustomContract({
         wasmHash: wasmHash,
-        address: wallet.publicKey,
+        address: Address.fromString(wallet.publicKey),
       })
     )
     .setTimeout(60)
     .build();
 
+  // 1) SIMULATE to read the return value (contract address) before submitting
+  const sim = await server.simulateTransaction(createTx);
+  const scv = extractSimRetval(sim);
+  if (!scv) {
+    throw new Error(
+      `simulateTransaction returned no retval for createCustomContract: ${JSON.stringify(sim)}`
+    );
+  }
+  if (scv.switch() !== xdr.ScValType.scvAddress()) {
+    throw new Error('createCustomContract retval is not an Address ScVal');
+  }
+  const scAddr = scv.address();
+  if (scAddr.switch() !== xdr.ScAddressType.scAddressTypeContract()) {
+    throw new Error('createCustomContract retval Address is not a contract');
+  }
+  const contractId = StrKey.encodeContract(scAddr.contractId()); // => "C..."
+
+  // 2) Prepare, sign, send, poll
   createTx = await server.prepareTransaction(createTx);
   
   const signedCreate = await wallet.signTransaction(createTx.toXDR());
@@ -101,8 +120,11 @@ export async function deployPOAContract(
     throw new Error("Contract creation failed");
   }
 
-  const contractId = extractContractId(createResponse.!);
   console.log("✅ Contract deployed! ID:", contractId);
+
+function extractSimRetval(sim: any) {
+  return sim.result?.retval;
+}
 
   // STEP 3: Call constructor
   await callContract(wallet, contractId, "__constructor", [
@@ -112,7 +134,7 @@ export async function deployPOAContract(
     eventParams.name
   ]);
 
-  return { contractId, wasmHash: wasmHash.toString("hex") };
+  return { contractId, wasmHash: wasmHash };
 }
 
 async function callContract(wallet: Wallet, contractId: string, method: string, args: any[]) {
@@ -137,31 +159,11 @@ async function callContract(wallet: Wallet, contractId: string, method: string, 
 
   callTx = await server.prepareTransaction(callTx);
   const signed = await wallet.signTransaction(callTx.toXDR());
-  const response = await server.sendTransaction(signed);
+  const txObj = TransactionBuilder.fromXDR(signed, NETWORK_PASSPHRASE);
+  const response = await server.sendTransaction(txObj);
 
   console.log("Invoke Response:", response);
   return response;
 }
 
-function extractWasmHash(metaXdr: string): Buffer | null {
-  try {
-    const meta = xdr.TransactionMeta.fromXDR(metaXdr, "base64");
-    const wasmHash = meta.v3().sorobanMeta().returnValue().bytes();
-    return Buffer.from(wasmHash);
-  } catch (e) {
-    console.error("extractWasmHash failed:", e);
-    return null;
-  }
-}
 
-function extractContractId(metaXdr: string): string {
-  try {
-    const meta = xdr.TransactionMeta.fromXDR(metaXdr, "base64");
-    const returnVal = meta.v3().sorobanMeta().returnValue().bytes();
-    const hex = Buffer.from(returnVal).toString("hex");
-    return `C${hex}`;
-  } catch (e) {
-    console.error("extractContractId failed:", e);
-    return "UNKNOWN";
-  }
-}
