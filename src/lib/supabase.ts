@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
-  "ttps://uvbmizgnpnccqbknavpv.supabase.co";
+  "https://uvbmizgnpnccqbknavpv.supabase.co";
 const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2Ym1pemducG5jY3Fia25hdnB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3NDQ1NDUsImV4cCI6MjA3ODMyMDU0NX0._CUMUY5QuGQ4mXSYln39hvEcGEl8n6wIIgz08g8Ee0k";

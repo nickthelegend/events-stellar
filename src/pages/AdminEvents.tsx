@@ -163,10 +163,10 @@ const AdminEvents: React.FC = () => {
                         {event.contract_id.slice(0, 20)}...
                       </p>
                       <Link
-                        to={`/event/${event.contract_id}`}
-                        className="btn btn-secondary btn-sm"
+                        to={`/admin/event/${event.contract_id}`}
+                        className="btn btn-primary btn-sm"
                       >
-                        View Details
+                        Manage
                       </Link>
                     </div>
                     <p className="text-xs text-secondary mt-2">
