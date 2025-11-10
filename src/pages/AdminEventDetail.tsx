@@ -120,9 +120,12 @@ const AdminEventDetail: React.FC = () => {
                 >
                   📱 Check-in Attendees
                 </Link>
-                <button type="button" className="btn btn-secondary w-full">
-                  👥 View Attendees
-                </button>
+                <Link
+                  to={`/admin/event/${event.contract_id}/attendees`}
+                  className="btn btn-secondary w-full block text-center"
+                >
+                  👥 Manage Attendees
+                </Link>
                 <button type="button" className="btn btn-secondary w-full">
                   🎫 Mint POA Tokens
                 </button>

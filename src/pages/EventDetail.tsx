@@ -15,12 +15,20 @@ const RsvpSection: React.FC<RsvpSectionProps> = ({ event, userAddress }) => {
   const [hasRsvped, setHasRsvped] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [email, setEmail] = useState<string>("");
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const status = await checkRsvpStatus(event.contract_id, userAddress);
-        setHasRsvped(status);
+        const { data } = await supabase
+          .from("rsvps")
+          .select("*")
+          .eq("contract_id", event.contract_id)
+          .eq("attendee_address", userAddress)
+          .single();
+
+        setHasRsvped(!!data);
       } catch (error) {
         console.error("Failed to check RSVP status:", error);
       } finally {
@@ -32,7 +40,7 @@ const RsvpSection: React.FC<RsvpSectionProps> = ({ event, userAddress }) => {
   }, [event.contract_id, userAddress]);
 
   const handleRsvp = async () => {
-    if (!signTransaction) return;
+    if (!signTransaction || !email.trim()) return;
 
     setIsLoading(true);
     try {
@@ -44,7 +52,18 @@ const RsvpSection: React.FC<RsvpSectionProps> = ({ event, userAddress }) => {
           return result.signedTxXdr;
         },
       });
+
+      const { error } = await supabase.from("rsvps").insert({
+        event_id: event.id,
+        contract_id: event.contract_id,
+        attendee_address: userAddress,
+        email: email.trim(),
+      });
+
+      if (error) throw error;
+
       setHasRsvped(true);
+      setShowEmailForm(false);
     } catch (error) {
       console.error("RSVP failed:", error);
     } finally {
@@ -74,6 +93,40 @@ const RsvpSection: React.FC<RsvpSectionProps> = ({ event, userAddress }) => {
             token.
           </p>
         </div>
+      ) : showEmailForm ? (
+        <div>
+          <p className="text-secondary mb-4">
+            Enter your email to complete registration:
+          </p>
+          <div className="space-y-4">
+            <input
+              type="email"
+              className="input"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleRsvp}
+                disabled={isLoading || !email.trim()}
+              >
+                {isLoading ? "Registering..." : "✅ Complete Registration"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowEmailForm(false)}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
         <div>
           <p className="text-secondary mb-4">
@@ -83,10 +136,9 @@ const RsvpSection: React.FC<RsvpSectionProps> = ({ event, userAddress }) => {
           <button
             type="button"
             className="btn btn-primary btn-lg"
-            onClick={handleRsvp}
-            disabled={isLoading}
+            onClick={() => setShowEmailForm(true)}
           >
-            {isLoading ? "Registering..." : "🎫 Register for Event"}
+            🎫 Register for Event
           </button>
         </div>
       )}

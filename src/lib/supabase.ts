@@ -26,3 +26,13 @@ export interface Event {
   metadata_ipfs_hash?: string;
   created_at: string;
 }
+
+export interface Rsvp {
+  id: string;
+  event_id: string;
+  contract_id: string;
+  attendee_address: string;
+  email: string;
+  status?: "pending" | "approved" | "rejected";
+  created_at: string;
+}
