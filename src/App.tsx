@@ -7,6 +7,9 @@ import NewEvent from "./pages/NewEvent";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import AdminEvents from "./pages/AdminEvents";
+import AdminEventDetail from "./pages/AdminEventDetail";
+import CheckIn from "./pages/CheckIn";
+import ManageAttendees from "./pages/ManageAttendees";
 import Debugger from "./pages/Debugger.tsx";
 
 const AppLayout: React.FC = () => (
@@ -62,6 +65,12 @@ function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/event/:contractId" element={<EventDetail />} />
         <Route path="/admin/events" element={<AdminEvents />} />
+        <Route path="/admin/event/:eventId" element={<AdminEventDetail />} />
+        <Route path="/admin/event/:eventId/checkin" element={<CheckIn />} />
+        <Route
+          path="/admin/event/:eventId/attendees"
+          element={<ManageAttendees />}
+        />
         <Route path="/debug" element={<Debugger />} />
         <Route path="/debug/:contractName" element={<Debugger />} />
       </Route>
