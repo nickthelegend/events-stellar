@@ -1,4 +1,4 @@
-const EMAIL_API_URL = "https://email-api-livid-eight.vercel.app";
+const EMAIL_API_URL = "https://your-site.netlify.app";
 
 export const sendEmail = async (
   to: string,
@@ -6,17 +6,20 @@ export const sendEmail = async (
   message: string,
 ) => {
   try {
-    const response = await fetch(`${EMAIL_API_URL}/api/send-email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${EMAIL_API_URL}/.netlify/functions/send-email`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          html: `<p>${message}</p>`,
+        }),
       },
-      body: JSON.stringify({
-        to,
-        subject,
-        html: `<p>${message}</p>`,
-      }),
-    });
+    );
 
     const result = await response.json();
 
