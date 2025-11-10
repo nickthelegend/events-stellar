@@ -158,7 +158,7 @@ const NewEvent: React.FC = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleDeploy();
+              void handleDeploy();
             }}
             className="grid grid-cols-1 lg:grid-cols-3 gap-8"
           >

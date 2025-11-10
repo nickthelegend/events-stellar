@@ -25,6 +25,7 @@ const Home: React.FC = () => {
           {/* Action Section */}
           {!address ? (
             <div className="scale-in mb-12">
+              type="button"
               <button
                 className="btn btn-primary btn-lg"
                 onClick={() => window.open("https://freighter.app/", "_blank")}

@@ -9,9 +9,7 @@
     "build": "tsc -b && vite build",
     "install:contracts": "npm install --workspace=packages && npm run build --workspace=packages",
     "preview": "vite preview",
-    "lint": "eslint .",
-    "format": "prettier . --write",
-    "prepare": "husky"
+    "lint": "eslint ."
   },
   "workspaces": [
     "packages/*"
@@ -57,7 +55,6 @@
   },
   "lint-staged": {
     "**/*": [
-      "eslint --fix --no-warn-ignored",
       "prettier --write --ignore-unknown"
     ]
   }

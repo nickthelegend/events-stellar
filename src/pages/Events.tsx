@@ -26,7 +26,7 @@ const Events: React.FC = () => {
       }
     };
 
-    fetchEvents();
+    void fetchEvents();
   }, []);
 
   const filteredEvents = useMemo(() => {
@@ -109,6 +109,7 @@ const Events: React.FC = () => {
               <div className="card p-12 max-w-md mx-auto">
                 <div className="text-4xl mb-4">🔍</div>
                 <h3 className="text-xl font-semibold mb-2">No Events Found</h3>
+                type="button"
                 <p className="text-secondary mb-6">
                   {searchQuery || selectedCategory !== "all"
                     ? "Try adjusting your search or filter criteria"
