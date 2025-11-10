@@ -1,8 +1,98 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Layout } from "@stellar/design-system";
 import { supabase, Event } from "../lib/supabase";
 import { useWallet } from "../hooks/useWallet";
+import { rsvpToEvent, checkRsvpStatus } from "../util/contractRsvp";
+
+interface RsvpSectionProps {
+  event: Event;
+  userAddress: string;
+}
+
+const RsvpSection: React.FC<RsvpSectionProps> = ({ event, userAddress }) => {
+  const { signTransaction } = useWallet();
+  const [hasRsvped, setHasRsvped] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const status = await checkRsvpStatus(event.contract_id, userAddress);
+        setHasRsvped(status);
+      } catch (error) {
+        console.error("Failed to check RSVP status:", error);
+      } finally {
+        setIsCheckingStatus(false);
+      }
+    };
+
+    void checkStatus();
+  }, [event.contract_id, userAddress]);
+
+  const handleRsvp = async () => {
+    if (!signTransaction) return;
+
+    setIsLoading(true);
+    try {
+      await rsvpToEvent({
+        contractId: event.contract_id,
+        userAddress,
+        signTransaction: async (xdr: string) => {
+          const result = await signTransaction(xdr);
+          return result.signedTxXdr;
+        },
+      });
+      setHasRsvped(true);
+    } catch (error) {
+      console.error("RSVP failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isCheckingStatus) {
+    return (
+      <div>
+        <h3 className="text-xl font-semibold mb-4">Event Registration</h3>
+        <p className="text-secondary">Checking registration status...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3 className="text-xl font-semibold mb-4">Event Registration</h3>
+      {hasRsvped ? (
+        <div>
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            ✅ You are registered for this event!
+          </div>
+          <p className="text-secondary mb-4">
+            You're all set! Attend the event to receive your proof-of-attendance
+            token.
+          </p>
+        </div>
+      ) : (
+        <div>
+          <p className="text-secondary mb-4">
+            Register for this event to be eligible for a proof-of-attendance
+            token.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary btn-lg"
+            onClick={handleRsvp}
+            disabled={isLoading}
+          >
+            {isLoading ? "Registering..." : "🎫 Register for Event"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const EventDetail: React.FC = () => {
   const { contractId } = useParams<{ contractId: string }>();
@@ -170,36 +260,22 @@ const EventDetail: React.FC = () => {
                       Connect Wallet
                     </button>
                   </div>
-                ) : isOwner ? (
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4">
-                      Event Management
-                    </h3>
-                    <p className="text-secondary mb-4">
-                      As the event creator, you can manage attendance and mint
-                      POA tokens.
-                    </p>
-                    <div className="flex gap-4 flex-wrap">
-                      <button type="button" className="btn btn-primary">
-                        Mark Attendance
-                      </button>
-                      <button type="button" className="btn btn-secondary">
-                        View Attendees
-                      </button>
-                    </div>
-                  </div>
                 ) : (
                   <div>
-                    <h3 className="text-xl font-semibold mb-4">
-                      Register for Event
-                    </h3>
-                    <p className="text-secondary mb-4">
-                      Register for this event to be eligible for a
-                      proof-of-attendance token.
-                    </p>
-                    <button type="button" className="btn btn-primary btn-lg">
-                      🎫 Register for Event
-                    </button>
+                    {isOwner && (
+                      <div className="mb-6">
+                        <h3 className="text-xl font-semibold mb-4">
+                          Event Management
+                        </h3>
+                        <Link
+                          to={`/admin/event/${event.contract_id}`}
+                          className="btn btn-primary mb-4"
+                        >
+                          Manage Event
+                        </Link>
+                      </div>
+                    )}
+                    <RsvpSection event={event} userAddress={address} />
                   </div>
                 )}
               </div>
