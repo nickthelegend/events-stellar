@@ -1,4 +1,4 @@
-const EMAIL_API_URL = "https://email-api-qjpa.vercel.app";
+const EMAIL_API_URL = "https://email-send-omega.vercel.app";
 
 export const sendEmail = async (
   to: string,
@@ -6,7 +6,7 @@ export const sendEmail = async (
   message: string,
 ) => {
   try {
-    const response = await fetch(`${EMAIL_API_URL}/api/send-email`, {
+    const response = await fetch(`${EMAIL_API_URL}/api/email`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
