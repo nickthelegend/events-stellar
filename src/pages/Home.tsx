@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Layout, Text, Icon } from "@stellar/design-system";
+import { Layout } from "@stellar/design-system";
 import { useWallet } from "../hooks/useWallet";
 import { Link } from "react-router-dom";
 
@@ -7,78 +7,87 @@ const Home: React.FC = () => {
   const { address } = useWallet();
 
   return (
-    <div style={{ backgroundColor: "#0f0f17", minHeight: "100vh", color: "white" }}>
+    <div className="min-h-screen bg-primary">
       <Layout.Inset>
-        <div style={{ textAlign: "center", padding: "4rem 0" }}>
-          <Text as="h1" size="xl" style={{ color: "white", marginBottom: "1rem" }}>
-            Stellar Event Manager
-          </Text>
-          <Text as="p" size="lg" style={{ color: "white", marginBottom: "3rem" }}>
-            Create and manage blockchain-verified events with proof-of-attendance tokens
-          </Text>
-          
+        <div className="page text-center" style={{ padding: "4rem 1rem" }}>
+          {/* Hero Section */}
+          <div className="slide-up mb-8">
+            <div className="text-5xl mb-4">🌟</div>
+            <h1 className="text-5xl font-bold text-white mb-6">EventStellar</h1>
+            <p className="text-xl text-secondary max-w-2xl mx-auto mb-8">
+              Create and manage blockchain-verified events with
+              proof-of-attendance tokens on Stellar
+            </p>
+          </div>
+
+          {/* Action Section */}
           {!address ? (
-            <div style={{ marginBottom: "3rem" }}>
-              <Button
-                variant="primary"
-                size="lg"
-                style={{ backgroundColor: "#6366f1", border: "none" }}
+            <div className="scale-in mb-12">
+              type="button"
+              <button
+                className="btn btn-primary btn-lg"
+                onClick={() => window.open("https://freighter.app/", "_blank")}
               >
+                <span className="text-lg">👛</span>
                 Connect Wallet to Get Started
-              </Button>
+              </button>
             </div>
           ) : (
-            <div style={{ marginBottom: "3rem" }}>
-              <Text as="p" size="sm" style={{ fontFamily: "monospace", color: "white", marginBottom: "1rem" }}>
-                Connected: {address}
-              </Text>
-              <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-                <Link to="/new">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    style={{ backgroundColor: "#6366f1", border: "none" }}
-                  >
-                    <Icon.Plus size="md" style={{ marginRight: "0.5rem" }} />
-                    Create Event
-                  </Button>
+            <div className="scale-in mb-12">
+              <div className="bg-card border rounded-lg p-4 mb-6 inline-block">
+                <p className="font-mono text-sm text-secondary flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  Connected: {address?.slice(0, 10)}...{address?.slice(-8)}
+                </p>
+              </div>
+              <div className="flex gap-4 justify-center flex-wrap">
+                <Link to="/new" className="btn btn-primary btn-lg">
+                  <span>➕</span>
+                  Create Event
                 </Link>
-                <Link to="/events">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    style={{ backgroundColor: "transparent", border: "2px solid #6366f1", color: "#6366f1" }}
-                  >
-                    <Icon.Globe01 size="md" style={{ marginRight: "0.5rem" }} />
-                    Discover Events
-                  </Button>
+                <Link to="/events" className="btn btn-secondary btn-lg">
+                  <span>🌐</span>
+                  Discover Events
                 </Link>
-                <Link to="/admin/events">
-                  <Button
-                    variant="tertiary"
-                    size="lg"
-                    style={{ backgroundColor: "transparent", border: "1px solid #a0a0b8", color: "#a0a0b8" }}
-                  >
-                    <Icon.Settings01 size="md" style={{ marginRight: "0.5rem" }} />
-                    My Events
-                  </Button>
+                <Link to="/admin/events" className="btn btn-secondary btn-lg">
+                  <span>⚙️</span>
+                  My Events
                 </Link>
               </div>
             </div>
           )}
-          
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem", marginTop: "4rem" }}>
-            <div style={{ padding: "2rem", backgroundColor: "#111111", borderRadius: "12px", border: "1px solid #27272a" }} className="card-hover glass">
-              <Text as="h3" size="md" style={{ color: "#6366f1", marginBottom: "1rem" }}>Create Events</Text>
-              <Text as="p" size="sm" style={{ color: "white" }}>Deploy smart contracts for your events and manage attendance verification</Text>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="card card-interactive p-8">
+              <div className="text-4xl mb-4">🚀</div>
+              <h3 className="text-xl font-semibold text-primary mb-3">
+                Create Events
+              </h3>
+              <p className="text-secondary">
+                Deploy smart contracts for your events and manage attendance
+                verification seamlessly
+              </p>
             </div>
-            <div style={{ padding: "2rem", backgroundColor: "#111111", borderRadius: "12px", border: "1px solid #27272a" }} className="card-hover glass">
-              <Text as="h3" size="md" style={{ color: "#6366f1", marginBottom: "1rem" }}>POA Tokens</Text>
-              <Text as="p" size="sm" style={{ color: "white" }}>Issue proof-of-attendance NFTs to verified participants</Text>
+            <div className="card card-interactive p-8">
+              <div className="text-4xl mb-4">🎫</div>
+              <h3 className="text-xl font-semibold text-primary mb-3">
+                POA Tokens
+              </h3>
+              <p className="text-secondary">
+                Issue proof-of-attendance NFTs to verified participants with
+                blockchain security
+              </p>
             </div>
-            <div style={{ padding: "2rem", backgroundColor: "#111111", borderRadius: "12px", border: "1px solid #27272a" }} className="card-hover glass">
-              <Text as="h3" size="md" style={{ color: "#6366f1", marginBottom: "1rem" }}>Blockchain Verified</Text>
-              <Text as="p" size="sm" style={{ color: "white" }}>All events and attendance records are stored on Stellar blockchain</Text>
+            <div className="card card-interactive p-8">
+              <div className="text-4xl mb-4">🔐</div>
+              <h3 className="text-xl font-semibold text-primary mb-3">
+                Blockchain Verified
+              </h3>
+              <p className="text-secondary">
+                All events and attendance records are immutably stored on
+                Stellar blockchain
+              </p>
             </div>
           </div>
         </div>

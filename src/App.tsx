@@ -12,8 +12,9 @@ import Debugger from "./pages/Debugger.tsx";
 const AppLayout: React.FC = () => (
   <main>
     <Layout.Header
-      projectId="EventStellar"
-      projectTitle="EventStellar"
+      projectId=""
+      projectTitle={"EventStellar"}
+      // hasThemeSwitcher={true}
       contentRight={
         <>
           <nav>
@@ -24,11 +25,7 @@ const AppLayout: React.FC = () => (
               }}
             >
               {({ isActive }) => (
-                <Button
-                  variant="tertiary"
-                  size="md"
-                  disabled={isActive}
-                >
+                <Button variant="tertiary" size="md" disabled={isActive}>
                   <Icon.Code02 size="md" />
                   Debugger
                 </Button>
