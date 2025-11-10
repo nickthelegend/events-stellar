@@ -7,34 +7,34 @@
 }
 
 :root {
-  /* Modern color system */
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --primary-light: #3b82f6;
-  --secondary: #0ea5e9;
-  --accent: #8b5cf6;
-  --success: #059669;
-  --warning: #d97706;
-  --error: #dc2626;
+  /* Bright color system */
+  --primary: #ff5656;
+  --primary-dark: #e04545;
+  --primary-light: #ff7676;
+  --secondary: #8ce4ff;
+  --accent: #ffa239;
+  --success: #4ade80;
+  --warning: #feee91;
+  --error: #ef4444;
 
-  /* Dark backgrounds */
-  --bg-primary: #0f0f17;
-  --bg-secondary: #1a1a2e;
-  --bg-tertiary: #16213e;
-  --bg-card: #1a1a2e;
-  --bg-hover: #252545;
-  --bg-active: #2d2d52;
+  /* Colorful backgrounds */
+  --bg-primary: #8ce4ff;
+  --bg-secondary: #feee91;
+  --bg-tertiary: #ffa239;
+  --bg-card: #ffffff;
+  --bg-hover: rgba(255, 255, 255, 0.8);
+  --bg-active: rgba(255, 255, 255, 0.9);
 
   /* Text colors */
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0b8;
-  --text-muted: #6b7280;
-  --text-inverse: #0f172a;
+  --text-primary: #1a1a1a;
+  --text-secondary: #2d2d2d;
+  --text-muted: #4a4a4a;
+  --text-inverse: #ffffff;
 
   /* Border colors */
-  --border-light: #2d2d52;
-  --border-medium: #3f3f66;
-  --border-dark: #525270;
+  --border-light: rgba(255, 255, 255, 0.3);
+  --border-medium: rgba(255, 255, 255, 0.5);
+  --border-dark: rgba(255, 255, 255, 0.7);
 
   /* Shadows */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -216,6 +216,31 @@ body {
 .btn-lg {
   padding: var(--space-4) var(--space-8);
   font-size: 1rem;
+}
+
+/* Bright theme overrides for Stellar Design System */
+.Layout__Header {
+  background: linear-gradient(135deg, #ff5656, #ffa239) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.Layout__Footer {
+  background: linear-gradient(135deg, #ffa239, #feee91) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: var(--text-primary) !important;
+}
+
+.Layout__Header * {
+  color: white !important;
+}
+
+.Layout__Footer * {
+  color: var(--text-primary) !important;
+}
+
+.Layout__Footer a {
+  color: #ff5656 !important;
+  font-weight: 600 !important;
 }
 
 /* Clean input styles */
@@ -496,7 +521,12 @@ a:hover {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: linear-gradient(
+    135deg,
+    var(--primary),
+    var(--secondary),
+    var(--accent)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

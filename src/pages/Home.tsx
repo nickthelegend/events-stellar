@@ -13,9 +13,7 @@ const Home: React.FC = () => {
           {/* Hero Section */}
           <div className="slide-up mb-8">
             <div className="text-5xl mb-4">🌟</div>
-            <h1 className="text-5xl font-bold gradient-text mb-6">
-              EventStellar
-            </h1>
+            <h1 className="text-5xl font-bold text-white mb-6">EventStellar</h1>
             <p className="text-xl text-secondary max-w-2xl mx-auto mb-8">
               Create and manage blockchain-verified events with
               proof-of-attendance tokens on Stellar

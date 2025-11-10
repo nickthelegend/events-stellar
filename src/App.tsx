@@ -13,12 +13,8 @@ const AppLayout: React.FC = () => (
   <main>
     <Layout.Header
       projectId=""
-      projectTitle={
-        <div className="flex items-center gap-2 text-2xl font-bold gradient-text">
-          <span className="text-3xl">⚡</span>
-          EventStellar
-        </div>
-      }
+      projectTitle={"EventStellar"}
+      // hasThemeSwitcher={true}
       contentRight={
         <>
           <nav>
