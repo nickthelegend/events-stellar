@@ -5,10 +5,8 @@ import {
   BASE_FEE,
   Networks,
   Address,
-  scValToNative,
   nativeToScVal,
   xdr,
-  Contract,
   StrKey,
 } from "@stellar/stellar-sdk";
 
@@ -34,15 +32,21 @@ export interface EventParams {
 export async function deployPOAContract(
   wasmBytes: Uint8Array,
   eventParams: EventParams,
-  wallet: Wallet
+  wallet: Wallet,
 ): Promise<DeploymentResult> {
   try {
-    console.log("🔧 Starting deployment with params:", { wasmSize: wasmBytes.length, eventParams, walletKey: wallet.publicKey });
-    
+    console.log("🔧 Starting deployment with params:", {
+      wasmSize: wasmBytes.length,
+      eventParams,
+      walletKey: wallet.publicKey,
+    });
+
     if (!wallet.publicKey) {
-      throw new Error("Wallet publicKey is undefined. Make sure wallet is connected.");
+      throw new Error(
+        "Wallet publicKey is undefined. Make sure wallet is connected.",
+      );
     }
-    
+
     const server = new rpc.Server(SOROBAN_RPC);
 
     // STEP 1: Upload Wasm
@@ -83,7 +87,7 @@ export async function deployPOAContract(
     let confirmed = false;
     let attempts = 0;
     while (!confirmed && attempts < 30) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       try {
         const txResult = await server.getTransaction(uploadResponse.hash);
         if (txResult.status === "SUCCESS") {
@@ -97,13 +101,19 @@ export async function deployPOAContract(
       }
       attempts++;
     }
-    
+
     if (!confirmed) {
       throw new Error("Upload transaction confirmation timeout");
     }
 
     console.log("🔐 Generating WASM hash...");
-    const wasmHashBuffer = await crypto.subtle.digest('SHA-256', wasmBytes);
+    const wasmHashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      wasmBytes.buffer.slice(
+        wasmBytes.byteOffset,
+        wasmBytes.byteOffset + wasmBytes.byteLength,
+      ),
+    );
     const wasmHash = new Uint8Array(wasmHashBuffer);
     console.log("✅ WASM Hash generated:", wasmHash);
 
@@ -125,87 +135,56 @@ export async function deployPOAContract(
             nativeToScVal(Address.fromString(wallet.publicKey)),
             nativeToScVal(eventParams.name),
             nativeToScVal(eventParams.symbol),
-            nativeToScVal(eventParams.uri)
-          ]
-        })
+            nativeToScVal(eventParams.uri),
+          ],
+        }),
       )
       .setTimeout(60)
       .build();
     console.log("✅ Create contract transaction built");
 
-  // 1) SIMULATE to read the return value (contract address) before submitting
-  const sim = await server.simulateTransaction(createTx);
-  const scv = extractSimRetval(sim);
-  if (!scv) {
-    throw new Error(
-      `simulateTransaction returned no retval for createCustomContract: ${JSON.stringify(sim)}`
-    );
-  }
-  if (scv.switch() !== xdr.ScValType.scvAddress()) {
-    throw new Error('createCustomContract retval is not an Address ScVal');
-  }
-  const scAddr = scv.address();
-  if (scAddr.switch() !== xdr.ScAddressType.scAddressTypeContract()) {
-    throw new Error('createCustomContract retval Address is not a contract');
-  }
-  const contractId = StrKey.encodeContract(scAddr.contractId()); // => "C..."
+    // 1) SIMULATE to read the return value (contract address) before submitting
+    const sim = await server.simulateTransaction(createTx);
+    const scv = extractSimRetval(sim);
+    if (!scv) {
+      throw new Error(
+        `simulateTransaction returned no retval for createCustomContract: ${JSON.stringify(sim)}`,
+      );
+    }
+    if (scv.switch() !== xdr.ScValType.scvAddress()) {
+      throw new Error("createCustomContract retval is not an Address ScVal");
+    }
+    const scAddr = scv.address();
+    if (scAddr.switch() !== xdr.ScAddressType.scAddressTypeContract()) {
+      throw new Error("createCustomContract retval Address is not a contract");
+    }
+    const contractId = StrKey.encodeContract(scAddr.contractId()); // => "C..."
 
-  // 2) Prepare, sign, send, poll
-  createTx = await server.prepareTransaction(createTx);
-  
-  const signedCreate = await wallet.signTransaction(createTx.toXDR());
-  const txObj = TransactionBuilder.fromXDR(signedCreate, NETWORK_PASSPHRASE);
-  const createResponse = await server.sendTransaction(txObj);
+    // 2) Prepare, sign, send, poll
+    createTx = await server.prepareTransaction(createTx);
 
-  if (createResponse.status === "ERROR") {
-    console.error("Contract creation failed:", createResponse);
-    throw new Error("Contract creation failed");
-  }
+    const signedCreate = await wallet.signTransaction(createTx.toXDR());
+    const txObj = TransactionBuilder.fromXDR(signedCreate, NETWORK_PASSPHRASE);
+    const createResponse = await server.sendTransaction(txObj);
 
-  console.log("✅ Contract deployed! ID:", contractId);
+    if (createResponse.status === "ERROR") {
+      console.error("Contract creation failed:", createResponse);
+      throw new Error("Contract creation failed");
+    }
 
-function extractSimRetval(sim: any) {
-  return sim.result?.retval;
-}
+    console.log("✅ Contract deployed! ID:", contractId);
 
-  // Constructor is called automatically during contract creation
+    function extractSimRetval(sim: any) {
+      return sim.result?.retval;
+    }
+
+    // Constructor is called automatically during contract creation
 
     console.log("🎉 Deployment completed successfully!");
-    return { contractId, wasmHash: Buffer.from(wasmHash).toString('hex') };
+    return { contractId, wasmHash: Buffer.from(wasmHash).toString("hex") };
   } catch (error) {
     console.error("💥 Deployment failed at:", error);
     console.error("📍 Error stack:", error);
     throw error;
   }
 }
-
-async function callContract(wallet: Wallet, contractId: string, method: string, args: any[]) {
-  const server = new rpc.Server(SOROBAN_RPC);
-  const source = await server.getAccount(wallet.publicKey);
-  const contract = new Contract(contractId);
-
-  console.log(`Calling method ${method} on contract ${contractId}`);
-
-  let callTx = new TransactionBuilder(source, {
-    fee: BASE_FEE,
-    networkPassphrase: NETWORK_PASSPHRASE,
-  })
-    .addOperation(
-      contract.call(
-        method,
-        ...args.map(a => nativeToScVal(a))
-      )
-    )
-    .setTimeout(60)
-    .build();
-
-  callTx = await server.prepareTransaction(callTx);
-  const signed = await wallet.signTransaction(callTx.toXDR());
-  const txObj = TransactionBuilder.fromXDR(signed, NETWORK_PASSPHRASE);
-  const response = await server.sendTransaction(txObj);
-
-  console.log("Invoke Response:", response);
-  return response;
-}
-
-

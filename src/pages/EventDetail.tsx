@@ -4,7 +4,7 @@ import { Layout } from "@stellar/design-system";
 import QRCode from "react-qr-code";
 import { supabase, Event } from "../lib/supabase";
 import { useWallet } from "../hooks/useWallet";
-import { rsvpToEvent, checkRsvpStatus } from "../util/contractRsvp";
+import { rsvpToEvent } from "../util/contractRsvp";
 
 interface RsvpSectionProps {
   event: Event;
