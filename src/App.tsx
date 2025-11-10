@@ -12,8 +12,24 @@ import Debugger from "./pages/Debugger.tsx";
 const AppLayout: React.FC = () => (
   <main>
     <Layout.Header
-      projectId="EventStellar"
-      projectTitle="EventStellar"
+      projectId=""
+      projectTitle={
+        <div style={{
+          fontSize: '24px',
+          fontWeight: '800',
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          letterSpacing: '-0.02em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ fontSize: '28px' }}>⚡</span>
+          EventStellar
+        </div>
+      }
       contentRight={
         <>
           <nav>
