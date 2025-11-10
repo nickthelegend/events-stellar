@@ -14,19 +14,8 @@ const AppLayout: React.FC = () => (
     <Layout.Header
       projectId=""
       projectTitle={
-        <div style={{
-          fontSize: '24px',
-          fontWeight: '800',
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          letterSpacing: '-0.02em',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '28px' }}>⚡</span>
+        <div className="flex items-center gap-2 text-2xl font-bold gradient-text">
+          <span className="text-3xl">⚡</span>
           EventStellar
         </div>
       }
@@ -40,11 +29,7 @@ const AppLayout: React.FC = () => (
               }}
             >
               {({ isActive }) => (
-                <Button
-                  variant="tertiary"
-                  size="md"
-                  disabled={isActive}
-                >
+                <Button variant="tertiary" size="md" disabled={isActive}>
                   <Icon.Code02 size="md" />
                   Debugger
                 </Button>

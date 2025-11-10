@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import { Button, Input, Layout, Text, Card } from "@stellar/design-system";
+import { Layout } from "@stellar/design-system";
 import { useWallet } from "../hooks/useWallet";
 import { deployPOAContract, EventParams } from "../util/contractDeploy";
 import { supabase } from "../lib/supabase";
-import { uploadImageToPinata, uploadMetadataToPinata, EventMetadata } from "../lib/pinata";
+import {
+  uploadImageToPinata,
+  uploadMetadataToPinata,
+  EventMetadata,
+} from "../lib/pinata";
 import { useNavigate } from "react-router-dom";
 
 const NewEvent: React.FC = () => {
@@ -12,14 +16,14 @@ const NewEvent: React.FC = () => {
   const [eventParams, setEventParams] = useState<EventParams>({
     symbol: "POA",
     uri: "",
-    name: ""
+    name: "",
   });
   const [formData, setFormData] = useState({
     description: "",
     location: "",
     eventDate: "",
     eventTime: "12:00",
-    category: ""
+    category: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -65,7 +69,7 @@ const NewEvent: React.FC = () => {
         time: formData.eventTime,
         image: imageUrl,
         category: formData.category,
-        creator: address
+        creator: address,
       };
 
       // Upload metadata to Pinata
@@ -76,46 +80,42 @@ const NewEvent: React.FC = () => {
       // Update eventParams with IPFS URI
       const updatedEventParams = {
         ...eventParams,
-        uri: metadataUri
+        uri: metadataUri,
       };
 
       const wasmPath = "/target/wasm32v1-none/release/hello_world.wasm";
       const response = await fetch(wasmPath);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to load WASM file: ${response.statusText}`);
       }
-      
+
       const wasmBytes = new Uint8Array(await response.arrayBuffer());
 
-      const result = await deployPOAContract(
-        wasmBytes,
-        updatedEventParams,
-        { 
-          publicKey: address, 
-          signTransaction: async (xdr: string) => {
-            const result = await signTransaction(xdr);
-            return result.signedTxXdr;
-          }
-        }
-      );
+      const result = await deployPOAContract(wasmBytes, updatedEventParams, {
+        publicKey: address,
+        signTransaction: async (xdr: string) => {
+          const result = await signTransaction(xdr);
+          return result.signedTxXdr;
+        },
+      });
 
       // Save to Supabase
-      const { error: dbError } = await supabase
-        .from('events')
-        .insert({
-          name: eventParams.name,
-          description: formData.description,
-          symbol: eventParams.symbol,
-          uri: metadataUri,
-          contract_id: result.contractId,
-          creator_address: address,
-          location: formData.location,
-          event_date: new Date(`${formData.eventDate}T${formData.eventTime}`).toISOString(),
-          category: formData.category,
-          image_url: imageUrl,
-          metadata_ipfs_hash: metadataHash
-        });
+      const { error: dbError } = await supabase.from("events").insert({
+        name: eventParams.name,
+        description: formData.description,
+        symbol: eventParams.symbol,
+        uri: metadataUri,
+        contract_id: result.contractId,
+        creator_address: address,
+        location: formData.location,
+        event_date: new Date(
+          `${formData.eventDate}T${formData.eventTime}`,
+        ).toISOString(),
+        category: formData.category,
+        image_url: imageUrl,
+        metadata_ipfs_hash: metadataHash,
+      });
 
       if (dbError) {
         console.error("Database error:", dbError);
@@ -133,106 +133,137 @@ const NewEvent: React.FC = () => {
 
   if (!address) {
     return (
-      <Layout.Content style={{ backgroundColor: "#0f0f17", minHeight: "100vh", color: "white" }}>
+      <div className="min-h-screen bg-primary">
         <Layout.Inset>
-          <Text as="h1" size="xl" style={{ color: "white" }}>Create Event</Text>
-          <Text as="p" size="md" style={{ color: "white" }}>
-            Please connect your wallet to create a new POA event.
-          </Text>
+          <div className="page max-w-2xl mx-auto p-8">
+            <h1 className="text-3xl font-bold mb-4">Create Event</h1>
+            <p className="text-secondary">
+              Please connect your wallet to create a new POA event.
+            </p>
+          </div>
         </Layout.Inset>
-      </Layout.Content>
+      </div>
     );
   }
 
   return (
-    <Layout.Content style={{ backgroundColor: "#0f0f17", minHeight: "100vh", color: "white" }}>
+    <div className="min-h-screen bg-primary">
       <Layout.Inset>
-        <Text as="h1" size="xl" style={{ color: "white" }}>Create New POA Event</Text>
-        <Text as="p" size="md" style={{ color: "white" }}>
-          Deploy a new Proof of Attendance smart contract for your event.
-        </Text>
+        <div className="page max-w-4xl mx-auto p-8">
+          <h1 className="text-3xl font-bold mb-2">Create New POA Event</h1>
+          <p className="text-secondary mb-8">
+            Deploy a new Proof of Attendance smart contract for your event.
+          </p>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleDeploy();
-          }}
-          style={{ marginTop: "2rem", maxWidth: "800px" }}
-        >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "2rem" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <Input
-                label="Event Name"
-                id="name"
-                value={eventParams.name}
-                onChange={(e) => setEventParams(prev => ({ ...prev, name: e.target.value }))}
-                required
-                fieldSize="lg"
-                style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
-              />
-              
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleDeploy();
+            }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          >
+            <div className="lg:col-span-2 flex flex-col gap-6">
               <div>
-                <label style={{ color: "white", fontSize: "14px", marginBottom: "8px", display: "block" }}>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your event..."
-                  style={{ 
-                    width: "100%", 
-                    minHeight: "100px", 
-                    backgroundColor: "#1a1a2e", 
-                    color: "white", 
-                    border: "1px solid #8866e0",
-                    borderRadius: "4px",
-                    padding: "8px"
-                  }}
-                />
-              </div>
-
-              <Input
-                label="Location"
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                fieldSize="lg"
-                style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
-              />
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <Input
-                  label="Event Date"
-                  id="eventDate"
-                  type="date"
-                  value={formData.eventDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, eventDate: e.target.value }))}
+                <label className="block text-sm font-medium mb-2">
+                  Event Name
+                </label>
+                <input
+                  className="input"
+                  value={eventParams.name}
+                  onChange={(e) =>
+                    setEventParams((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                   required
-                  fieldSize="lg"
-                  style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
-                />
-                <Input
-                  label="Event Time"
-                  id="eventTime"
-                  type="time"
-                  value={formData.eventTime}
-                  onChange={(e) => setFormData(prev => ({ ...prev, eventTime: e.target.value }))}
-                  fieldSize="lg"
-                  style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
+                  placeholder="Enter event name"
                 />
               </div>
 
               <div>
-                <label style={{ color: "white", fontSize: "14px", marginBottom: "8px", display: "block" }}>Category</label>
+                <label className="block text-sm font-medium mb-2">
+                  Description
+                </label>
+                <textarea
+                  className="input textarea"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Describe your event..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Location
+                </label>
+                <input
+                  className="input"
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      location: e.target.value,
+                    }))
+                  }
+                  placeholder="Event location"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Event Date
+                  </label>
+                  <input
+                    className="input"
+                    type="date"
+                    value={formData.eventDate}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        eventDate: e.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Event Time
+                  </label>
+                  <input
+                    className="input"
+                    type="time"
+                    value={formData.eventTime}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        eventTime: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Category
+                </label>
                 <select
+                  className="input"
                   value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    backgroundColor: "#1a1a2e",
-                    color: "white",
-                    border: "1px solid #8866e0",
-                    borderRadius: "4px"
-                  }}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      category: e.target.value,
+                    }))
+                  }
                 >
                   <option value="">Select category</option>
                   <option value="conference">Conference</option>
@@ -242,28 +273,31 @@ const NewEvent: React.FC = () => {
                   <option value="other">Other</option>
                 </select>
               </div>
-              
-              <Input
-                label="Token Symbol"
-                id="symbol"
-                value={eventParams.symbol}
-                onChange={(e) => setEventParams(prev => ({ ...prev, symbol: e.target.value }))}
-                required
-                fieldSize="lg"
-                placeholder="POA"
-                style={{ backgroundColor: "#1a1a2e", color: "white", border: "1px solid #8866e0" }}
-              />
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Token Symbol
+                </label>
+                <input
+                  className="input"
+                  value={eventParams.symbol}
+                  onChange={(e) =>
+                    setEventParams((prev) => ({
+                      ...prev,
+                      symbol: e.target.value,
+                    }))
+                  }
+                  required
+                  placeholder="POA"
+                />
+              </div>
             </div>
 
             <div>
-              <label style={{ color: "white", fontSize: "14px", marginBottom: "8px", display: "block" }}>Event Image</label>
-              <Card style={{
-                backgroundColor: "#1a1a2e",
-                border: "2px dashed #8866e0",
-                aspectRatio: "1",
-                position: "relative",
-                cursor: "pointer"
-              }}>
+              <label className="block text-sm font-medium mb-2">
+                Event Image
+              </label>
+              <div className="card border-2 border-dashed border-primary aspect-square relative cursor-pointer">
                 <input
                   type="file"
                   accept="image/*"
@@ -272,55 +306,53 @@ const NewEvent: React.FC = () => {
                     if (file) {
                       setImageFile(file);
                       const reader = new FileReader();
-                      reader.onload = (e) => setImagePreview(e.target?.result as string);
+                      reader.onload = (e) =>
+                        setImagePreview(e.target?.result as string);
                       reader.readAsDataURL(file);
                     }
                   }}
-                  style={{ display: "none" }}
+                  className="hidden"
                   id="imageUpload"
                 />
-                <label htmlFor="imageUpload" style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  height: "100%",
-                  cursor: "pointer"
-                }}>
+                <label
+                  htmlFor="imageUpload"
+                  className="flex items-center justify-center h-full cursor-pointer"
+                >
                   {imagePreview ? (
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }}
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-cover rounded-lg"
                     />
                   ) : (
-                    <div style={{ textAlign: "center", color: "#8866e0" }}>
-                      <div style={{ fontSize: "48px", marginBottom: "8px" }}>📷</div>
-                      <Text as="p" size="sm" style={{ color: "#8866e0" }}>Upload Image</Text>
+                    <div className="text-center text-primary">
+                      <div className="text-4xl mb-2">📷</div>
+                      <p className="text-sm">Upload Image</p>
                     </div>
                   )}
                 </label>
-              </Card>
+              </div>
             </div>
-          </div>
 
-            {error && (
-              <Text as="p" size="sm" style={{ color: "red" }}>
-                {error}
-              </Text>
-            )}
+            <div className="lg:col-span-3">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-4">
+                  {error}
+                </div>
+              )}
 
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            disabled={isDeploying}
-            style={{ marginTop: "2rem", backgroundColor: "#8866e0", border: "none", width: "100%" }}
-          >
-            {isDeploying ? "Creating Event..." : "Create Event"}
-          </Button>
-        </form>
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg w-full"
+                disabled={isDeploying}
+              >
+                {isDeploying ? "Creating Event..." : "Create Event"}
+              </button>
+            </div>
+          </form>
+        </div>
       </Layout.Inset>
-    </Layout.Content>
+    </div>
   );
 };
 
