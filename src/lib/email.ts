@@ -1,7 +1,4 @@
-import { Resend } from "resend";
-
-const RESEND_API_KEY = "re_dwWdAvt2_GwgbnBtFjNtB3X9cjjEsb2w5";
-const resend = new Resend(RESEND_API_KEY);
+const EMAIL_API_URL = "https://email-send-omega.vercel.app";
 
 export const sendEmail = async (
   to: string,
@@ -9,20 +6,27 @@ export const sendEmail = async (
   message: string,
 ) => {
   try {
-    const { data, error } = await resend.emails.send({
-      from: "EventStellar <onboarding@resend.dev>",
-      to: [to],
-      subject,
-      html: `<p>${message}</p>`,
+    const response = await fetch(`${EMAIL_API_URL}/api/email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to,
+        subject,
+        html: `<p>${message}</p>`,
+      }),
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      return { success: false, error };
+    const result = await response.json();
+
+    if (!result.success) {
+      console.error("Email API error:", result.error);
+      return { success: false, error: result.error };
     }
 
-    console.log("📧 Email sent successfully:", data);
-    return { success: true, data };
+    console.log("📧 Email sent successfully:", result.data);
+    return { success: true, data: result.data };
   } catch (error) {
     console.error("Email send error:", error);
     return { success: false, error };

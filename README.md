@@ -209,7 +209,7 @@ const metadataResult = await pinata.upload.json(metadata);
 ```typescript
 // Send approval notification
 await resend.emails.send({
-  from: "events@yourdomain.com",
+  from: "events@nickthelegened.tech",
   to: attendeeEmail,
   subject: "RSVP Approved",
   html: emailTemplate,

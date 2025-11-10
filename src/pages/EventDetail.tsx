@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Layout } from "@stellar/design-system";
+import QRCode from "react-qr-code";
 import { supabase, Event } from "../lib/supabase";
 import { useWallet } from "../hooks/useWallet";
 import { rsvpToEvent, checkRsvpStatus } from "../util/contractRsvp";
@@ -89,9 +90,13 @@ const RsvpSection: React.FC<RsvpSectionProps> = ({ event, userAddress }) => {
             ✅ You are registered for this event!
           </div>
           <p className="text-secondary mb-4">
-            You're all set! Attend the event to receive your proof-of-attendance
-            token.
+            You're all set! Show this QR code at the event to receive your
+            proof-of-attendance token.
           </p>
+          <div className="bg-white p-4 rounded-lg inline-block">
+            <QRCode value={userAddress} size={200} />
+          </div>
+          <p className="text-xs text-secondary mt-2">QR Code: {userAddress}</p>
         </div>
       ) : showEmailForm ? (
         <div>

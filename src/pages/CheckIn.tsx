@@ -4,14 +4,16 @@ import { Layout } from "@stellar/design-system";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { supabase, Event } from "../lib/supabase";
 import { useWallet } from "../hooks/useWallet";
+import { markAttended } from "../util/contractRsvp";
 
 const CheckIn: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
-  const { address } = useWallet();
+  const { address, signTransaction } = useWallet();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [scannedData, setScannedData] = useState<string>("");
   const [scanHistory, setScanHistory] = useState<string[]>([]);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -47,6 +49,59 @@ const CheckIn: React.FC = () => {
 
   const handleError = (error: any) => {
     console.error("Scanner error:", error);
+  };
+
+  const handleCheckIn = async (attendeeAddress: string) => {
+    if (!eventId || !address || !signTransaction) return;
+
+    setIsCheckingIn(true);
+    try {
+      // Check if attendee has RSVP'd
+      const { data: rsvpData, error: rsvpError } = await supabase
+        .from("rsvps")
+        .select("*")
+        .eq("contract_id", eventId)
+        .eq("attendee_address", attendeeAddress)
+        .eq("status", "approved")
+        .single();
+
+      if (rsvpError || !rsvpData) {
+        alert("❌ Attendee not found or not approved for this event");
+        return;
+      }
+
+      if (rsvpData.checked_in) {
+        alert("⚠️ Attendee already checked in");
+        return;
+      }
+
+      // Mark attended on contract
+      await markAttended({
+        contractId: eventId,
+        userAddress: address,
+        attendeeAddress,
+        signTransaction: async (xdr: string) => {
+          const result = await signTransaction(xdr);
+          return result.signedTxXdr;
+        },
+      });
+
+      // Update database
+      const { error: updateError } = await supabase
+        .from("rsvps")
+        .update({ checked_in: true })
+        .eq("id", rsvpData.id);
+
+      if (updateError) throw updateError;
+
+      alert("✅ Attendee checked in successfully!");
+      setScannedData("");
+    } catch (error) {
+      console.error("Check-in failed:", error);
+      alert("❌ Check-in failed. Please try again.");
+    } finally {
+      setIsCheckingIn(false);
+    }
   };
 
   if (loading) {
@@ -118,8 +173,13 @@ const CheckIn: React.FC = () => {
                   <div className="bg-secondary p-3 rounded">
                     <p className="font-mono text-sm break-all">{scannedData}</p>
                   </div>
-                  <button type="button" className="btn btn-primary mt-3 w-full">
-                    ✅ Check-in Attendee
+                  <button
+                    type="button"
+                    className="btn btn-primary mt-3 w-full"
+                    onClick={() => handleCheckIn(scannedData)}
+                    disabled={isCheckingIn}
+                  >
+                    {isCheckingIn ? "Checking in..." : "✅ Check-in Attendee"}
                   </button>
                 </div>
               )}
