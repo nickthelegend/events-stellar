@@ -6,7 +6,7 @@ export const sendEmail = async (
   message: string,
 ) => {
   try {
-    const response = await fetch(`${EMAIL_API_URL}/send-email`, {
+    const response = await fetch(`${EMAIL_API_URL}/api/send-email`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
