@@ -4,10 +4,11 @@ import { Layout } from "@stellar/design-system";
 import { supabase, Event, Rsvp } from "../lib/supabase";
 import { useWallet } from "../hooks/useWallet";
 import { sendEmail } from "../lib/email";
+import { markAttended } from "../util/contractRsvp";
 
 const ManageAttendees: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
-  const { address } = useWallet();
+  const { address, signTransaction } = useWallet();
   const [event, setEvent] = useState<Event | null>(null);
   const [attendees, setAttendees] = useState<Rsvp[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,7 @@ const ManageAttendees: React.FC = () => {
     attendeeId: string,
     status: "approved" | "rejected",
     email: string,
+    attendeeAddress: string,
   ) => {
     try {
       const { error } = await supabase
@@ -56,6 +58,25 @@ const ManageAttendees: React.FC = () => {
         .eq("id", attendeeId);
 
       if (error) throw error;
+
+      // If approved, call mark_attended contract method
+      if (status === "approved" && address && eventId && signTransaction) {
+        try {
+          await markAttended({
+            contractId: eventId,
+            userAddress: address,
+            attendeeAddress,
+            signTransaction: async (xdr: string) => {
+              const result = await signTransaction(xdr);
+              return result.signedTxXdr;
+            },
+          });
+          console.log("✅ Marked attendee as attended on contract");
+        } catch (contractError) {
+          console.error("Contract call failed:", contractError);
+          // Continue with email even if contract fails
+        }
+      }
 
       // Send email notification
       const subject =
@@ -196,6 +217,7 @@ const ManageAttendees: React.FC = () => {
                                     attendee.id,
                                     "approved",
                                     attendee.email,
+                                    attendee.attendee_address,
                                   )
                                 }
                               >
@@ -209,6 +231,7 @@ const ManageAttendees: React.FC = () => {
                                     attendee.id,
                                     "rejected",
                                     attendee.email,
+                                    attendee.attendee_address,
                                   )
                                 }
                               >
